@@ -1,0 +1,289 @@
+===== TEST 1: tic_tac_toe.py - X wint (met foute invoer: 'abc', '0', bezet vakje) =====
+Invoer: abc, 0, 1, 1(bezet), 4, 2, 5, 3, n
+=== Boter-kaas-en-eieren ===
+
+  1 | 2 | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): Ongeldige invoer: typ een getal van 1 t/m 9.
+Speler X, kies een vakje (1-9): Dat vakje bestaat niet: kies 1 t/m 9.
+Speler X, kies een vakje (1-9): 
+  X | 2 | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler O, kies een vakje (1-9): Dat vakje is al bezet, kies een ander vakje.
+Speler O, kies een vakje (1-9): 
+  X | 2 | 3
+ ---+---+---
+  O | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | X | 3
+ ---+---+---
+  O | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler O, kies een vakje (1-9): 
+  X | X | 3
+ ---+---+---
+  O | O | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | X | X
+ ---+---+---
+  O | O | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X heeft gewonnen!
+Stand -> X: 1  O: 0  gelijk: 0
+Nog een keer spelen? (j/n): Bedankt voor het spelen!
+
+===== TEST 2: tic_tac_toe.py - gelijkspel, daarna opnieuw spelen (j) en O wint =====
+Invoer: 1 2 3 5 4 6 8 7 9, j, 1 5 2 3 9 7, n
+=== Boter-kaas-en-eieren ===
+
+  1 | 2 | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | 2 | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler O, kies een vakje (1-9): 
+  X | O | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | O | X
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler O, kies een vakje (1-9): 
+  X | O | X
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | O | X
+ ---+---+---
+  X | O | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler O, kies een vakje (1-9): 
+  X | O | X
+ ---+---+---
+  X | O | O
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | O | X
+ ---+---+---
+  X | O | O
+ ---+---+---
+  7 | X | 9
+
+Speler O, kies een vakje (1-9): 
+  X | O | X
+ ---+---+---
+  X | O | O
+ ---+---+---
+  O | X | 9
+
+Speler X, kies een vakje (1-9): 
+  X | O | X
+ ---+---+---
+  X | O | O
+ ---+---+---
+  O | X | X
+
+Gelijkspel! Het bord is vol.
+Stand -> X: 0  O: 0  gelijk: 1
+Nog een keer spelen? (j/n): 
+  1 | 2 | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | 2 | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler O, kies een vakje (1-9): 
+  X | 2 | 3
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | X | 3
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler O, kies een vakje (1-9): 
+  X | X | O
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  7 | 8 | 9
+
+Speler X, kies een vakje (1-9): 
+  X | X | O
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  7 | 8 | X
+
+Speler O, kies een vakje (1-9): 
+  X | X | O
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  O | 8 | X
+
+Speler O heeft gewonnen!
+Stand -> X: 0  O: 1  gelijk: 1
+Nog een keer spelen? (j/n): Bedankt voor het spelen!
+
+===== TEST 3: tic_tac_toe_vs_computer.py - moeilijk (minimax), speler speelt goed -> gelijkspel =====
+Invoer: 2 (moeilijk), 5 8 3 4 9, n
+=== Boter-kaas-en-eieren tegen de computer ===
+Kies niveau: 1 = makkelijk, 2 = moeilijk (onverslaanbaar): 
+  1 | 2 | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 1.
+
+  O | 2 | 3
+ ---+---+---
+  4 | X | 6
+ ---+---+---
+  7 | 8 | 9
+
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 2.
+
+  O | O | 3
+ ---+---+---
+  4 | X | 6
+ ---+---+---
+  7 | X | 9
+
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 7.
+
+  O | O | X
+ ---+---+---
+  4 | X | 6
+ ---+---+---
+  O | X | 9
+
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 6.
+
+  O | O | X
+ ---+---+---
+  X | X | O
+ ---+---+---
+  O | X | 9
+
+Jouw beurt (X), kies een vakje (1-9): 
+  O | O | X
+ ---+---+---
+  X | X | O
+ ---+---+---
+  O | X | X
+
+Gelijkspel! Het bord is vol.
+Stand -> jij: 0  computer: 0  gelijk: 1
+Nog een keer spelen? (j/n): Bedankt voor het spelen!
+
+===== TEST 4: tic_tac_toe_vs_computer.py - moeilijk, speler blokkeert niet -> computer wint =====
+Invoer: 2 (moeilijk), 1 9 3 4, n   (ongeldig niveau 'x' eerst)
+=== Boter-kaas-en-eieren tegen de computer ===
+Kies niveau: 1 = makkelijk, 2 = moeilijk (onverslaanbaar): Typ 1 of 2.
+Kies niveau: 1 = makkelijk, 2 = moeilijk (onverslaanbaar): 
+  1 | 2 | 3
+ ---+---+---
+  4 | 5 | 6
+ ---+---+---
+  7 | 8 | 9
+
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 5.
+
+  X | 2 | 3
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  7 | 8 | 9
+
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 2.
+
+  X | O | 3
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  7 | 8 | X
+
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 8.
+
+  X | O | X
+ ---+---+---
+  4 | O | 6
+ ---+---+---
+  7 | O | X
+
+De computer heeft gewonnen!
+Stand -> jij: 0  computer: 1  gelijk: 0
+Nog een keer spelen? (j/n): Typ 'j' of 'n'.
+Nog een keer spelen? (j/n): Bedankt voor het spelen!
+
+===== TEST 5: minimax-check: 1000 potjes moeilijk vs random speler (speler begint) =====
+Speler (random) wint: 0  Computer wint: 816  Gelijk: 184
+
+===== TEST 6: makkelijk niveau (random computer) - 1 potje met vaste speler-zetten =====
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 7.
+Jouw beurt (X), kies een vakje (1-9): De computer kiest vakje 8.
+Gefeliciteerd, je hebt gewonnen!
+Stand -> jij: 1  computer: 0  gelijk: 0
+
+===== TEST 7: space_shooter.py - py_compile + korte automatische start (venster sluit zelf) =====
+py_compile OK
+Schip na beweeg links (niet buiten scherm), bbox x1 = 0
+Na 2 sec + schot: score= 10 levens= 3 game_over= False
+Vijanden onderaan met 1 leven -> game over: True
+Na R: levens= 3 score= 0 game_over= False
+Venster netjes gesloten

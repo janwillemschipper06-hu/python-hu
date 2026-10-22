@@ -1,0 +1,126 @@
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Welke host wil je pingen (IP of hostname)? Bezig met pingen van 127.0.0.1...
+
+Pinging 127.0.0.1 with 32 bytes of data:
+Reply from 127.0.0.1: bytes=32 time<1ms TTL=128
+Reply from 127.0.0.1: bytes=32 time<1ms TTL=128
+Reply from 127.0.0.1: bytes=32 time<1ms TTL=128
+Reply from 127.0.0.1: bytes=32 time<1ms TTL=128
+
+Ping statistics for 127.0.0.1:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 0ms, Maximum = 0ms, Average = 0ms
+
+Resultaat: 127.0.0.1 is bereikbaar.
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Welk IP-adres wil je controleren op poort 22 (SSH)? Poort 22 (SSH) op 127.0.0.1 is DICHT of gefilterd.
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Welk IP-adres wil je controleren op poort 22 (SSH)? Fout: '999.1.1.1' is geen geldig IP-adres.
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Welk subnet wil je scannen (bijv. 192.168.1.0/24)? Subnet 127.0.0.0/30 bevat 2 host(s).
+Bezig met scannen...
+2 host(s) up:
+  [UP] 127.0.0.1
+  [UP] 127.0.0.2
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Welk subnet wil je scannen (bijv. 192.168.1.0/24)? Fout: 'abc/99' is geen geldig subnet.
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Welke hostname wil je opzoeken (bijv. google.com)? IP-adressen van localhost:
+  127.0.0.1                                -> reverse: LTP-JJQJ924
+  ::1                                      -> reverse: LTP-JJQJ924
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Welke hostname wil je opzoeken (bijv. google.com)? IP-adressen van google.com:
+  142.251.39.142                           -> reverse: tzamsa-af-in-f14.1e100.net
+  2a00:1450:400e:804::200e                 -> reverse: tzamsa-af-in-x0e.1e100.net
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Hostname      : LTP-JJQJ924
+OS            : Windows 11 (10.0.26200)
+Python-versie : 3.14.7
+Lokaal IP     : 192.168.178.42
+CPU-aantal    : 12
+Schijf (C:\) : totaal 475.8 GB, gebruikt 343.8 GB, vrij 131.9 GB
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Ongeldige keuze, kies 0 t/m 5.
+
+===== BEHEERTOOL =====
+1. Ping een host
+2. Port scanner (poort 22 / SSH)
+3. IP scanner (subnet)
+4. DNS lookup
+5. Systeeminformatie
+0. Afsluiten
+Maak een keuze: 
+Tot ziens!

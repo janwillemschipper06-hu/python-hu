@@ -1,0 +1,16 @@
+VALID users (bestaande accounts) (7):
+  ftp           fztu          git           mysql         root          sshd          
+  uucp          
+
+INVALID users (bestaan niet op het systeem) (57):
+  0             0101          123           1234          123456        FILTER        
+  Management    PlcmSpIp      abc           admin         anonymous     api           
+  boot          bssh          butter        chen          cheng         cisco         
+  cyrus         default       deploy        dff           eoor          ftpuser       
+  ghost         guest         ingrid        inspur        jay           magnos        
+  matlab        monitor       nagios        nagios1       operator      oracle        
+  oralce        pgadmin       pi            postgres      postgres1     redhat        
+  sandeep       support       ted           test          test1         test2         
+  test9         ubnt          ubuntu        user          utsims        vnc           
+  webmaster     www           zhangyan      
+

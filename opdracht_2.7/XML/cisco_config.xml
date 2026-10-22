@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Cisco ASA configuratie omgezet naar XML (weekopdracht 2.7.2) -->
+<device hostname="XXX">
+
+    <!-- Interfaces: elke interface heeft een naam (attribuut), een nameif en een IP-adres -->
+    <interfaces>
+        <interface name="Ethernet0">
+            <nameif>test</nameif>
+            <description>Herman’s network: "&lt;Games &amp; Other stuff&gt;"</description>
+            <ip-address address="10.10.88.50" netmask="255.255.255.254"/>
+        </interface>
+
+        <interface name="Ethernet1">
+            <nameif>inside</nameif>
+            <description>请收藏</description>
+            <ip-address address="10.86.194.176" netmask="255.255.254.0"/>
+        </interface>
+    </interfaces>
+
+    <!-- Wachtwoorden worden versleuteld opgeslagen -->
+    <security>
+        <enable-password encrypted="true">8Ry2YjIyt7RRXU24</enable-password>
+        <passwd encrypted="true">2KFQnbNIdI.2KYOU</passwd>
+    </security>
+
+    <!-- Firewall policy met inspectieregels per protocol -->
+    <policy-map name="xxx_global_fw_policy">
+        <class name="inspection_default">
+            <inspect protocol="dns"/>
+            <inspect protocol="ftp"/>
+            <inspect protocol="http"/>
+        </class>
+    </policy-map>
+
+    <!-- Codeblok ongewijzigd opgenomen via CDATA, zodat < > ' " niet als XML worden gelezen -->
+    <script><![CDATA[
+for (c in colors) {
+var item = $('<div/>').css("background-color",'#'+colors[c]).addClass("colorbox");
+item.click((function () {
+var col = colors[c];
+return function () {
+currentColor = col;
+};
+})());
+]]></script>
+
+</device>

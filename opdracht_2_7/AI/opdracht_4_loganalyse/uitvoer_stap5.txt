@@ -1,0 +1,25 @@
+=== Top 5 IP-adressen met de meeste inlogpogingen ===
+  1. 183.62.140.253    286 pogingen (10 verschillende users)
+  2. 187.141.143.180    80 pogingen (28 verschillende users)
+  3. 103.99.0.122       46 pogingen (19 verschillende users)
+  4. 112.95.230.3       26 pogingen (3 verschillende users)
+  5. 5.188.10.180       18 pogingen (7 verschillende users)
+
+IP met de meeste inlogpogingen: 183.62.140.253 (286 pogingen)
+  Users vanaf dit IP:
+    root             276x
+    oracle             2x
+    zhangyan           1x
+    dff                1x
+    test               1x
+    ubuntu             1x
+    git                1x
+    boot               1x
+    123456             1x
+    123                1x
+
+=== IP-adressen met succesvolle logins ===
+  119.137.62.142   1 gelukte login(s)
+IP met de meeste succesvolle logins: 119.137.62.142 (1x)
+  Users vanaf dit IP:
+    fztu               1x

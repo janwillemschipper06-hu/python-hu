@@ -1,0 +1,9 @@
+Unieke geldige gebruikersnamen in OpenSSH_2k.log:
+  - ftp
+  - fztu
+  - git
+  - mysql
+  - root
+  - sshd
+  - uucp
+Totaal: 7 unieke geldige users

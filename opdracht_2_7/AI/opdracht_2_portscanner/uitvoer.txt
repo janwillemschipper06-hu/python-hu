@@ -1,0 +1,33 @@
+=== scan 127.0.0.1 ===
+127.0.0.1: poort 22 (SSH) is dicht
+127.0.0.1: poort 3389 (RDP) is dicht
+
+=== scan subnet 192.168.1.0/28 ===
+192.168.1.3: poort 22 (SSH) is dicht
+192.168.1.13: poort 22 (SSH) is dicht
+192.168.1.11: poort 22 (SSH) is dicht
+192.168.1.6: poort 22 (SSH) is dicht
+192.168.1.12: poort 22 (SSH) is dicht
+192.168.1.2: poort 22 (SSH) is dicht
+192.168.1.1: poort 22 (SSH) is dicht
+192.168.1.10: poort 22 (SSH) is dicht
+192.168.1.5: poort 22 (SSH) is dicht
+192.168.1.9: poort 22 (SSH) is dicht
+192.168.1.4: poort 22 (SSH) is dicht
+192.168.1.14: poort 22 (SSH) is dicht
+192.168.1.7: poort 22 (SSH) is dicht
+192.168.1.8: poort 22 (SSH) is dicht
+192.168.1.1: poort 3389 (RDP) is dicht
+192.168.1.6: poort 3389 (RDP) is dicht
+192.168.1.12: poort 3389 (RDP) is dicht
+192.168.1.11: poort 3389 (RDP) is dicht
+192.168.1.10: poort 3389 (RDP) is dicht
+192.168.1.9: poort 3389 (RDP) is dicht
+192.168.1.8: poort 3389 (RDP) is dicht
+192.168.1.5: poort 3389 (RDP) is dicht
+192.168.1.7: poort 3389 (RDP) is dicht
+192.168.1.4: poort 3389 (RDP) is dicht
+192.168.1.2: poort 3389 (RDP) is dicht
+192.168.1.13: poort 3389 (RDP) is dicht
+192.168.1.3: poort 3389 (RDP) is dicht
+192.168.1.14: poort 3389 (RDP) is dicht

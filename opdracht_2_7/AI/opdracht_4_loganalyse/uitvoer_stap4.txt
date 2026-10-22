@@ -1,0 +1,16 @@
+=== Unieke gebruikers ===
+Unieke valid users   : 7
+Unieke invalid users : 57
+Totaal unieke users  : 64
+
+=== Aantal logregels per categorie ===
+Totaal aantal logregels: 2000
+  Accepted password (gelukte login)   : 1
+  Failed password (valid user)        : 385
+  Failed password (invalid user)      : 135
+  Invalid user ... from               : 113
+  pam_unix authentication failure     : 494
+  Session opened                      : 1
+  POSSIBLE BREAK-IN ATTEMPT           : 85
+
+Totaal wachtwoordpogingen (Accepted + Failed regels): 521
