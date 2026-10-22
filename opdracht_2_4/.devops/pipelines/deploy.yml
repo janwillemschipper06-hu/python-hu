@@ -1,0 +1,184 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Orchestration Pipeline — Customer Onboarding Portal
+# Deploys: Build image → Infrastructure → Container App → Static Web App
+# (each stage resolves its own variables).
+#
+# Triggers:
+#   - Manual: pick environment (dev / prod), all stages run
+#   - Push to develop: auto-detect changes, deploy to dev
+#   - Pull request (develop / main): auto-detect changes, deploy to dev
+#   - Push / merge to main: auto-detect changes, deploy to prod
+#
+# Environment resolution (compile time):
+#   Azure DevOps does not expose the PR target branch at compile time, so prod is
+#   selected when a commit lands on main (Build.SourceBranch = refs/heads/main)
+#   on a non-manual run — i.e. once a PR to main is completed. Manual runs always
+#   honor the selected environment parameter.
+# ═══════════════════════════════════════════════════════════════════════
+
+trigger:
+  branches:
+    include:
+      - develop
+      - main
+  paths:
+    include:
+      - infra/*
+      - database/*
+      - api/*
+      - frontend/*
+
+pr:
+  branches:
+    include:
+      - develop
+      - main
+  paths:
+    include:
+      - infra/*
+      - database/*
+      - api/*
+      - frontend/*
+
+parameters:
+  - name: environment
+    displayName: "Environment"
+    type: string
+    default: dev
+    values:
+      - dev
+      - prod
+
+variables:
+  # Load the variable group (library) + agent pools for the resolved environment.
+  # A non-manual run on main (a completed PR / merge) uses the prod library; every
+  # other automated trigger (develop, PR validation) and manual runs use the
+  # environment parameter (default 'dev'). The PR target branch isn't available at
+  # compile time, so prod is keyed off a commit landing on main.
+  - ${{ if and(ne(variables['Build.Reason'], 'Manual'), eq(variables['Build.SourceBranch'], 'refs/heads/main')) }}:
+      - template: ../templates/variables.yml
+        parameters:
+          environment: prod
+  - ${{ else }}:
+      - template: ../templates/variables.yml
+        parameters:
+          environment: ${{ parameters.environment }}
+
+  # Same branch-based environment, reused for stage names and resource names below
+  # (a compile-time variable can't be referenced from the variable-group include
+  # above, so the condition is repeated here).
+  - name: deployEnvironment
+    ${{ if and(ne(variables['Build.Reason'], 'Manual'), eq(variables['Build.SourceBranch'], 'refs/heads/main')) }}:
+      value: prod
+    ${{ else }}:
+      value: ${{ parameters.environment }}
+
+  # Whether this is a manual run (all stages) or an automated trigger.
+  - name: isManual
+    value: ${{ eq(variables['Build.Reason'], 'Manual') }}
+
+# ─── Stages ────────────────────────────────────────────────────────────
+stages:
+  # Stage 0: Detect which folders changed (skipped on manual runs).
+  - template: ../templates/stage-detect-changes.yml
+
+  # Stage 1: Build container image — build & push the API image to the shared
+  # ACR BEFORE Infra, so the Bicep deploy references the real image (by
+  # Build.BuildId tag) and the Container App revision provisions healthy on its
+  # real ingress port/health probe. Runs whenever Infra or the API could deploy.
+  - template: ../templates/stage-build-images.yml
+    parameters:
+      environment: ${{ variables.deployEnvironment }}
+      azureSubscription: $(azureSubscription)
+      dependsOn:
+        - DetectChanges
+      condition: >-
+        and(
+          not(failed()),
+          or(
+            eq(variables['Build.Reason'], 'Manual'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.infraChanged'], 'true'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.apiChanged'], 'true')
+          )
+        )
+
+  # Stage 2: Infrastructure — Bicep.
+  # On manual: runs unconditionally. On CI/PR: runs when infra/ changed.
+  - template: ../templates/stage-infra.yml
+    parameters:
+      environment: ${{ variables.deployEnvironment }}
+      azureSubscription: $(azureSubscription)
+      dependsOn:
+        - DetectChanges
+        - BuildImages_${{ variables.deployEnvironment }}
+      condition: >-
+        and(
+          not(failed()),
+          or(
+            eq(variables['Build.Reason'], 'Manual'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.infraChanged'], 'true')
+          )
+        )
+
+  # Stage 3: Database — build & publish the SQL project, then create the app's
+  # contained SQL user. Runs after Infra (Bicep creates the database) and before
+  # the Container App (its user must exist before the API connects).
+  # On manual: runs unconditionally. On CI/PR: only when database/ or infra/ changed.
+  - template: ../templates/stage-database.yml
+    parameters:
+      environment: ${{ variables.deployEnvironment }}
+      azureSubscription: $(azureSubscription)
+      dependsOn:
+        - DetectChanges
+        - Infra_${{ variables.deployEnvironment }}
+      condition: >-
+        and(
+          not(failed()),
+          or(
+            eq(variables['Build.Reason'], 'Manual'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.databaseChanged'], 'true'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.infraChanged'], 'true')
+          )
+        )
+
+  # Stage 4: Container App — points the app at the freshly built image.
+  # Runs after Database so the app's SQL user exists before the API starts.
+  # On manual: runs unconditionally. On CI/PR: only when api/ or infra/ changed.
+  - template: ../templates/stage-container-app.yml
+    parameters:
+      environment: ${{ variables.deployEnvironment }}
+      azureSubscription: $(azureSubscription)
+      imageName: cop-api
+      dependsOn:
+        - DetectChanges
+        - BuildImages_${{ variables.deployEnvironment }}
+        - Infra_${{ variables.deployEnvironment }}
+        - Database_${{ variables.deployEnvironment }}
+      condition: >-
+        and(
+          not(failed()),
+          or(
+            eq(variables['Build.Reason'], 'Manual'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.apiChanged'], 'true'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.infraChanged'], 'true')
+          )
+        )
+
+  # Stage 5: Static Web App — React/Vite SPA, independent of infra outputs.
+  # On manual: runs unconditionally. On CI/PR: only when frontend/ or infra/ changed.
+  - template: ../templates/stage-static-web-app.yml
+    parameters:
+      environment: ${{ variables.deployEnvironment }}
+      azureSubscription: $(azureSubscription)
+      dependsOn:
+        - DetectChanges
+        - Infra_${{ variables.deployEnvironment }}
+      condition: >-
+        and(
+          not(failed()),
+          or(
+            eq(variables['Build.Reason'], 'Manual'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.frontendChanged'], 'true'),
+            eq(dependencies.DetectChanges.outputs['CheckPaths.changes.infraChanged'], 'true')
+          )
+        )

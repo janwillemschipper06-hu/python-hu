@@ -1,0 +1,36 @@
+parameters:
+  - name: environment
+    type: string
+    values:
+      - dev
+      - prod
+
+variables:
+  # ── Environment mapping ───────────────────────────────────────────────
+  - name: environmentName
+    ${{ if eq(parameters.environment, 'dev') }}:
+      value: dev
+    ${{ elseif eq(parameters.environment, 'prod') }}:
+      value: prod
+
+  # ── Agent pool — self-hosted VMSS agents inside the hub VNet ──────────
+  - name: agentPool
+    ${{ if eq(parameters.environment, 'prod') }}:
+      value: 'Operations - VMSS - PROD - Windows2022'
+    ${{ else }}:
+      value: 'Operations - VMSS - OTA - Windows2022'
+
+  # ── Linux agent pool — for jobs requiring Linux Docker (container builds)
+  - name: agentPoolLinux
+    ${{ if eq(parameters.environment, 'prod') }}:
+      value: 'Operations - VMSS - PROD - Ubuntu-latest'
+    ${{ else }}:
+      value: 'Operations - VMSS - OTA - Ubuntu-latest'
+
+  # App-specific variable group (per-app secrets and settings, incl.
+  # VITE_API_BASE_URL and the deployment outputs persisted by the infra stage).
+  - group: ba-9a-cop-${{ parameters.environment }}
+
+  # Shared foundational infrastructure outputs (SQL server / ACR / CAE),
+  # published by the 9A-Ops-BI-Shared-Infra pipeline.
+  - group: ba-9a-shared-${{ parameters.environment }}

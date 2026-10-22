@@ -1,0 +1,64 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Static Web App stage — builds the React/Vite SPA and deploys it to Azure
+# Static Web Apps. All build-time VITE_* values are read from the ba-9a-cop-<env>
+# variable group. VITE_API_BASE_URL is set manually there (points at the shared
+# APIM gateway). The Entra identifiers (VITE_ENTRA_TENANT_ID / VITE_SPA_CLIENT_ID
+# / VITE_API_SCOPE) are persisted into the same group by the infra stage from the
+# bicepparam (single source of truth) — so run Infra at least once before a
+# frontend-only deploy.
+# ═══════════════════════════════════════════════════════════════════════
+
+parameters:
+  - name: environment
+    type: string
+  - name: azureSubscription
+    type: string
+  - name: dependsOn
+    type: object
+    default: []
+  - name: condition
+    type: string
+    default: succeeded()
+
+stages:
+  - stage: StaticWebApp_${{ parameters.environment }}
+    displayName: "Static Web App (${{ parameters.environment }})"
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: ${{ parameters.condition }}
+    jobs:
+      - job: BuildAndDeploy
+        displayName: "Build & deploy frontend"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            fetchDepth: 1
+
+          - task: NodeTool@0
+            displayName: "Install Node.js"
+            inputs:
+              versionSpec: "22.x"
+
+          - bash: $(Build.SourcesDirectory)/.devops/scripts/frontend/build-frontend.sh $(Build.SourcesDirectory)/frontend
+            displayName: "Build frontend"
+            # All VITE_* values come from the ba-9a-cop-<env> variable group.
+            # VITE_API_BASE_URL is set manually there (APIM gateway). The Entra
+            # identifiers are persisted into the group by the infra stage from the
+            # bicepparam (infra/environments/<env>/main.bicepparam), so they have a
+            # single source of truth instead of hand-maintained variable-group
+            # entries. They are non-secret (docs/authentication-implementation-plan.md).
+            env:
+              VITE_API_BASE_URL: $(VITE_API_BASE_URL)
+              VITE_ENTRA_TENANT_ID: $(VITE_ENTRA_TENANT_ID)
+              VITE_SPA_CLIENT_ID: $(VITE_SPA_CLIENT_ID)
+              VITE_API_SCOPE: $(VITE_API_SCOPE)
+
+          # Deploy to Azure Static Web Apps.
+          # Requires 'staticWebAppDeploymentToken' secret in the variable group
+          # ba-9a-cop-dev / ba-9a-cop-prod (persisted by the infra stage).
+          - task: AzureStaticWebApp@0
+            displayName: "Deploy to Static Web App"
+            inputs:
+              azure_static_web_apps_api_token: $(staticWebAppDeploymentToken)
+              app_location: "frontend/dist"
+              skip_app_build: true

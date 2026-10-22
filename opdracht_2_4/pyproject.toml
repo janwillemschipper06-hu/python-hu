@@ -1,0 +1,66 @@
+# Shared tooling configuration for the Customer Onboarding Portal Python API.
+#
+# This file intentionally contains only ``[tool.*]`` sections: the API manages
+# its runtime dependencies via ``api/requirements.txt``. Centralising the Black
+# / Ruff / mypy configuration here keeps linting, formatting, and type-checking
+# consistent and available to the pre-commit hooks and CI.
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+# Import-resolution root so first-party imports (``from app...``) are grouped
+# correctly by the import sorter.
+src = ["api"]
+
+[tool.ruff.lint]
+# "Most strict": enable every rule, then subtract only the ones that conflict
+# with the Black formatter or with this repo's documented conventions. Prefer
+# adding a justified entry to ``ignore`` / ``per-file-ignores`` over disabling a
+# whole category.
+select = ["ALL"]
+ignore = [
+    "E501",   # Line length is enforced by Black.
+    "COM812", # Trailing-comma rule conflicts with the formatter.
+    "ISC001", # Implicit string concatenation conflicts with the formatter.
+    "D203",   # Incompatible with D211 (no blank line before class docstring).
+    "D213",   # Incompatible with D212 (multi-line summary on first line).
+    "CPY001", # This repo does not use per-file copyright headers.
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-annotations]
+# ``def method(self) -> None`` etc. do not need ``self``/``cls`` annotated.
+mypy-init-return = true
+suppress-dummy-args = true
+
+[tool.ruff.lint.per-file-ignores]
+# Tests: assertions, magic values, and missing annotations/docstrings are fine.
+"**/tests/**" = ["S101", "ANN", "D", "PLR2004", "SLF001", "EM101", "TRY003"]
+"**/conftest.py" = ["S101", "ANN", "D"]
+# Local scripts and smoke tests are allowed to print and use asserts.
+"**/scripts/**" = ["T20", "S101", "INP001"]
+
+[tool.mypy]
+python_version = "3.13"
+# The API's top-level package is ``app`` under ``api/``. Point mypy at that base
+# so first-party ``from app...`` imports resolve to their real types when mypy is
+# invoked from the repo root (otherwise they collapse to ``Any`` and strict
+# return checks misfire on e.g. pydantic models).
+mypy_path = "api"
+# Enable the full strict preset plus the extra opt-in strictness flags.
+strict = true
+warn_unreachable = true
+extra_checks = true
+# Third-party libraries without shipped type information are treated as ``Any``
+# rather than failing the run; our own code remains fully type-checked.
+ignore_missing_imports = true
+# The API uses ``app`` as its top-level package; resolve the package base from
+# the passed files.
+explicit_package_bases = true
+namespace_packages = true

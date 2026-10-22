@@ -1,0 +1,108 @@
+# Pre-commit hooks for this monorepo.
+#
+#   Python  (api)      -> Black, Ruff (strict), mypy (strict)
+#   React   (frontend) -> Prettier, ESLint
+#   T-SQL   (database) -> sqlfluff
+#
+# Install once with:  pre-commit install
+# Run against everything with:  pre-commit run --all-files
+#
+# Tool configuration lives next to the code it governs:
+#   - Python:  pyproject.toml  ([tool.black] / [tool.ruff] / [tool.mypy])
+#   - React:   frontend/eslint.config.js, frontend/.prettierrc.json
+#   - T-SQL:   database/.sqlfluff
+
+minimum_pre_commit_version: "3.5.0"
+
+default_language_version:
+  python: python3
+
+# Never touch generated or vendored files.
+exclude: |
+  (?x)^(
+    .*/node_modules/.*
+    | frontend/dist/.*
+    | frontend/package-lock\.json
+    | frontend/tsconfig\.tsbuildinfo
+    | .*\.min\.(js|css)
+  )$
+
+repos:
+  # ----------------------------------------------------------------- hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ["--fix=no"]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: detect-private-key
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+        exclude: ^frontend/tsconfig.*\.json$ # tsconfig files allow comments
+
+  # ------------------------------------------------------------------ Python
+  - repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+      - id: black
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.0
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+
+  # The Python API lives under ``api/`` with ``app`` as its top-level package.
+  # mypy is run from the repo root, so it auto-discovers the ``[tool.mypy]``
+  # config (including ``mypy_path = "api"``) in the root ``pyproject.toml``.
+  # ``fastapi``/``pydantic`` are installed so their decorators and models are
+  # typed under ``--strict``.
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.3.0
+    hooks:
+      - id: mypy
+        name: mypy (api)
+        files: ^api/.*\.py$
+        additional_dependencies: [fastapi, pydantic, pytest, requests, types-requests]
+
+  # ------------------------------------------------------------- React / TS
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.6
+    hooks:
+      - id: prettier
+        files: ^frontend/.*\.(ts|tsx|js|jsx|css|html|json|md)$
+
+  # ESLint runs from the frontend's own node_modules (populated by ``npm ci``)
+  # rather than a pre-commit-managed environment. The flat config
+  # (frontend/eslint.config.js) loads its plugins via native ESM ``import``,
+  # whose module resolution walks up from the config file and ignores NODE_PATH,
+  # so it can only see packages installed under frontend/. Versions are therefore
+  # pinned in frontend/package.json + package-lock.json. ``language: system``
+  # runs the project's own Node/ESLint: requires Node.js on PATH and the frontend
+  # dependencies installed (``npm ci`` in frontend/).
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: node frontend/node_modules/eslint/bin/eslint.js
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        types: [file]
+        args: ["--config", "frontend/eslint.config.js", "--max-warnings=0"]
+
+  # --------------------------------------------------------------- T-SQL / DB
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 4.2.2
+    hooks:
+      - id: sqlfluff-lint
+        files: ^database/.*\.sql$
+        # sqlfluff only honours ``templater`` from a .sqlfluff in the current
+        # working directory; pre-commit runs from the repo root, so pass it on
+        # the command line to match database/.sqlfluff's intent (raw, no Jinja).
+        args: ["--templater", "raw"]

@@ -1,0 +1,15 @@
+stages:
+  - stage: DetectChanges
+    displayName: "Detect changes"
+    jobs:
+      - job: CheckPaths
+        displayName: "Check changed paths"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          - bash: $(Build.SourcesDirectory)/.devops/scripts/utility/detect-changes.sh
+            name: changes
+            displayName: "Detect changed folders"

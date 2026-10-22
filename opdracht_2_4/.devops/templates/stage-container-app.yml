@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Container App stage — points the existing Container App at the freshly built
+# image tag. Used on app-only reruns (Infra skipped) where a new image was
+# pushed; on full runs it re-applies the same tag the Infra stage already set
+# (idempotent). Resource names come from the Infra outputs or, when Infra is
+# skipped, from the ba-9a-cop-<env> variable group.
+# ═══════════════════════════════════════════════════════════════════════
+
+parameters:
+  - name: environment
+    type: string
+  - name: azureSubscription
+    type: string
+  - name: dependsOn
+    type: object
+    default: []
+  - name: condition
+    type: string
+    default: succeeded()
+  - name: imageName
+    type: string
+    default: cop-api
+
+stages:
+  - stage: ContainerApp_${{ parameters.environment }}
+    displayName: "Container App (${{ parameters.environment }})"
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: ${{ parameters.condition }}
+    jobs:
+      - job: DeployApp
+        displayName: "Update Container App"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          - task: AzureCLI@2
+            displayName: "Update Container App"
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: $(Build.SourcesDirectory)/.devops/scripts/app/update-container-app.sh
+              arguments: '"$(containerAppName)" "$(resourceGroupName)" "$(acrLoginServer)" "$(Build.BuildId)" "${{ parameters.imageName }}"'

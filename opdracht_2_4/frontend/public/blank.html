@@ -1,0 +1,22 @@
+<!doctype html>
+<!--
+  Dedicated redirect target for MSAL silent flows (ssoSilent / acquireTokenSilent).
+
+  MSAL runs these in a hidden iframe. If the iframe's redirect_uri were the SPA
+  root, Azure Static Web Apps' navigationFallback would reload the whole React
+  app *inside that iframe* — which re-bootstraps the app in a cross-context
+  frame (the "Unsafe attempt to initiate navigation … allow-top-navigation"
+  console error) and makes MSAL stall until its iframe timeout, showing a long
+  blank screen on load.
+
+  Pointing silent flows at this minimal page instead lets MSAL read the auth
+  response hash immediately with no app bundle executing in the frame. This file
+  must be registered as a SPA redirect URI on the SPA app registration.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Authenticating…</title>
+  </head>
+  <body></body>
+</html>

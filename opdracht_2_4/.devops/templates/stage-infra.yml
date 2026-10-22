@@ -1,0 +1,110 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Infrastructure stage — deploys via Bicep.
+#
+# Uses infra/ for templates and parameter files. Shared infra values (SQL
+# server / ACR / CAE) come from the ba-9a-shared-<env> variable group and are
+# injected as environment variables read by the bicepparam file. Exports output
+# variables for downstream stages and persists them to the variable group.
+# ═══════════════════════════════════════════════════════════════════════
+
+parameters:
+  - name: environment
+    type: string
+  - name: azureSubscription
+    type: string
+  - name: location
+    type: string
+    default: westeurope
+  - name: condition
+    type: string
+    default: succeeded()
+  - name: dependsOn
+    type: object
+    default: []
+
+stages:
+  - stage: Infra_${{ parameters.environment }}
+    displayName: "Infrastructure (${{ parameters.environment }})"
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: ${{ parameters.condition }}
+    jobs:
+      - job: InfraDeploy
+        displayName: "Deploy Infrastructure"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            fetchDepth: 1
+
+          - task: AzureCLI@2
+            displayName: "Validate Bicep"
+            env:
+              SHARED_RESOURCE_GROUP_NAME: $(sharedResourceGroupName)
+              SHARED_SQL_SERVER_NAME: $(sharedSqlServerName)
+              SHARED_SQL_SERVER_FQDN: $(sharedSqlServerFqdn)
+              SHARED_ACR_NAME: $(sharedAcrName)
+              SHARED_ACR_LOGIN_SERVER: $(sharedAcrLoginServer)
+              SHARED_CAE_ID: $(sharedCaeId)
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: $(Build.SourcesDirectory)/.devops/scripts/infra/validate-bicep.sh
+              arguments: '"${{ parameters.location }}" "${{ parameters.environment }}"'
+
+          - task: AzureCLI@2
+            displayName: "Bicep What-If"
+            env:
+              SHARED_RESOURCE_GROUP_NAME: $(sharedResourceGroupName)
+              SHARED_SQL_SERVER_NAME: $(sharedSqlServerName)
+              SHARED_SQL_SERVER_FQDN: $(sharedSqlServerFqdn)
+              SHARED_ACR_NAME: $(sharedAcrName)
+              SHARED_ACR_LOGIN_SERVER: $(sharedAcrLoginServer)
+              SHARED_CAE_ID: $(sharedCaeId)
+              CONTAINER_IMAGE: $(sharedAcrLoginServer)/cop-api:$(Build.BuildId)
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: $(Build.SourcesDirectory)/.devops/scripts/infra/bicep-what-if.sh
+              arguments: '"${{ parameters.location }}" "${{ parameters.environment }}"'
+
+          - task: AzureCLI@2
+            displayName: "Deploy Bicep"
+            name: DeployBicep
+            env:
+              SHARED_RESOURCE_GROUP_NAME: $(sharedResourceGroupName)
+              SHARED_SQL_SERVER_NAME: $(sharedSqlServerName)
+              SHARED_SQL_SERVER_FQDN: $(sharedSqlServerFqdn)
+              SHARED_ACR_NAME: $(sharedAcrName)
+              SHARED_ACR_LOGIN_SERVER: $(sharedAcrLoginServer)
+              SHARED_CAE_ID: $(sharedCaeId)
+              CONTAINER_IMAGE: $(sharedAcrLoginServer)/cop-api:$(Build.BuildId)
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: $(Build.SourcesDirectory)/.devops/scripts/infra/deploy-bicep.sh
+              arguments: '"${{ parameters.location }}" "${{ parameters.environment }}"'
+
+          - task: Bash@3
+            displayName: "Update variable group: outputs"
+            env:
+              STATIC_WEB_APP_TOKEN: $(staticWebAppDeploymentToken)
+              SQL_SERVER_FQDN: $(sqlServerFqdn)
+              SQL_DATABASE_NAME: $(sqlDatabaseName)
+              ACR_LOGIN_SERVER: $(acrLoginServer)
+              CONTAINER_APP_NAME: $(containerAppName)
+              RESOURCE_GROUP_NAME: $(resourceGroupName)
+              # Prefixed so they can't collide with the same-named VITE_* variables
+              # that the ba-9a-cop-<env> group injects (which would win with stale values).
+              NEW_VITE_ENTRA_TENANT_ID: $(viteEntraTenantId)
+              NEW_VITE_SPA_CLIENT_ID: $(viteSpaClientId)
+              NEW_VITE_API_SCOPE: $(viteApiScope)
+              SYSTEM_ACCESS_TOKEN: $(System.AccessToken)
+              ORG_URL: $(System.TeamFoundationCollectionUri)
+              PROJECT: $(System.TeamProject)
+            inputs:
+              targetType: filePath
+              filePath: $(Build.SourcesDirectory)/.devops/scripts/infra/update-variable-group.sh
+              arguments: "${{ parameters.environment }}"

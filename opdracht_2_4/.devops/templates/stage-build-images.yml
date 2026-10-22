@@ -1,0 +1,49 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Build Images stage — builds and pushes the API container image to the shared
+# ACR BEFORE the infrastructure deploy.
+#
+# The Bicep deploy references this image by its Build.BuildId tag so the
+# Container App revision provisions against its real ingress port/health probe
+# (8001, /health). A public placeholder image would listen on a different port
+# with no /health endpoint, so its revision could never become healthy and the
+# deployment stack would fail with "Operation expired".
+#
+# Runs on the self-hosted Linux pool (Docker daemon + private ACR endpoint
+# reachable via the hub DNS resolver).
+# ═══════════════════════════════════════════════════════════════════════
+
+parameters:
+  - name: environment
+    type: string
+  - name: azureSubscription
+    type: string
+  - name: dependsOn
+    type: object
+    default: []
+  - name: condition
+    type: string
+    default: succeeded()
+
+stages:
+  - stage: BuildImages_${{ parameters.environment }}
+    displayName: "Build Images (${{ parameters.environment }})"
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: ${{ parameters.condition }}
+    jobs:
+      - job: BuildImages
+        displayName: "Build & push image to ACR"
+        pool:
+          # Self-hosted Linux agent inside hub VNet — Linux Docker daemon required
+          # to build python:3.13-slim; private ACR endpoint reached via hub DNS.
+          name: $(agentPoolLinux)
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          - task: AzureCLI@2
+            displayName: "Build & push API image"
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: $(Build.SourcesDirectory)/.devops/scripts/app/build-and-push-image.sh
+              arguments: '"$(sharedAcrLoginServer)" "$(Build.BuildId)" "api/Dockerfile" "api" "cop-api"'

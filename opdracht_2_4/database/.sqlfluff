@@ -1,0 +1,21 @@
+# sqlfluff configuration for the SQL Database project (T-SQL / Azure SQL).
+#
+# The scripts here are plain DDL/DML (no Jinja/dbt templating), so the raw
+# templater is used and a dialect must be set explicitly.
+[sqlfluff]
+dialect = tsql
+templater = raw
+max_line_length = 120
+
+[sqlfluff:indentation]
+tab_space_size = 4
+indent_unit = space
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+# Azure resource names use hyphens (e.g. the managed-identity database user
+# id-cst-cop-<env>), so allow '-' in identifiers rather than flagging every
+# bracket-quoted principal name.
+[sqlfluff:rules:references.special_chars]
+additional_allowed_characters = -

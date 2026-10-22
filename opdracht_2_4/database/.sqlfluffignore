@@ -1,0 +1,3 @@
+# sqlfluff's T-SQL dialect cannot parse elastic-query external objects.
+ExternalDataSource.sql
+ext/Tables/

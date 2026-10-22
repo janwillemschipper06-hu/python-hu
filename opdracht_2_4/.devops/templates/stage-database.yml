@@ -1,0 +1,214 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Database stage — build the SQL project to a DACPAC, publish it to the app
+# database on the shared SQL server, then create the Container App's contained
+# SQL user.
+#
+# Runs AFTER Infra (the database itself is created by Bicep) and BEFORE the
+# Container App (the app user must exist before the API connects). Mirrors
+# 9A-Ops-BI-Advanced-Monitoring, collapsed to a single app user granted EXECUTE
+# on the onboarding schema — the app reaches the database only through stored
+# procedures (docs/adr/0002, docs/adr/0008), never direct table access.
+# ═══════════════════════════════════════════════════════════════════════
+
+parameters:
+  - name: environment
+    type: string
+  - name: azureSubscription
+    type: string
+  - name: dependsOn
+    type: object
+    default: []
+  - name: condition
+    type: string
+    default: succeeded()
+
+stages:
+  - stage: Database_${{ parameters.environment }}
+    displayName: "Database (${{ parameters.environment }})"
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: ${{ parameters.condition }}
+    jobs:
+      # Build the SQL project on a hosted agent (SSDT tooling available).
+      - job: BuildDacpac
+        displayName: "Build DACPAC"
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+
+          - task: MSBuild@1
+            displayName: "Build SQL project"
+            inputs:
+              solution: database/BA-9A-CUSTOMER-ONBOARDING-PORTAL-DB.sqlproj
+              msbuildArguments: /p:Configuration=Release
+              platform: AnyCPU
+
+          - task: PublishPipelineArtifact@1
+            displayName: "Publish DACPAC"
+            inputs:
+              targetPath: $(Build.SourcesDirectory)/database/bin/Release/BA-9A-CUSTOMER-ONBOARDING-PORTAL-DB.dacpac
+              artifact: dacpac
+
+      # Deploy on a self-hosted Ubuntu agent inside the hub VNet so it can reach
+      # the SQL private endpoint. SqlAzureDacpacDeployment@1 is Windows-only;
+      # replaced with the cross-platform sqlpackage CLI + AAD access token.
+      - job: DeployDacpac
+        displayName: "Deploy DACPAC"
+        dependsOn: BuildDacpac
+        pool:
+          name: $(agentPoolLinux)
+        steps:
+          - checkout: none
+
+          - task: DownloadPipelineArtifact@2
+            displayName: "Download DACPAC"
+            inputs:
+              artifact: dacpac
+              path: $(Pipeline.Workspace)/dacpac
+
+          - task: AzureCLI@2
+            displayName: "Resolve SQL connection from deployment stack"
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                $outputs = az stack sub show `
+                  --name "cop-${{ parameters.environment }}" `
+                  --query outputs -o json | ConvertFrom-Json
+                $fqdn = $outputs.sqlServerFqdn.value
+                $db   = $outputs.sqlDatabaseName.value
+                if (-not $fqdn -or -not $db) {
+                  Write-Error "Could not read sqlServerFqdn / sqlDatabaseName from stack outputs."
+                  exit 1
+                }
+                Write-Host "##vso[task.setvariable variable=resolvedSqlFqdn]$fqdn"
+                Write-Host "##vso[task.setvariable variable=resolvedSqlDb]$db"
+                Write-Host "Target: $fqdn / $db"
+
+          - task: AzureCLI@2
+            displayName: "Deploy DACPAC"
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                export DOTNET_ROOT="$HOME/.dotnet"
+                export PATH="$DOTNET_ROOT:$PATH:$HOME/.dotnet/tools"
+
+                curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+                bash /tmp/dotnet-install.sh --channel 10.0 --install-dir "$DOTNET_ROOT"
+                rm -f /tmp/dotnet-install.sh
+
+                if ! dotnet tool install -g microsoft.sqlpackage; then
+                  dotnet tool update -g microsoft.sqlpackage
+                fi
+
+                TOKEN=$(az account get-access-token \
+                  --resource https://database.windows.net \
+                  --query accessToken -o tsv)
+                sqlpackage \
+                  /Action:Publish \
+                  /SourceFile:"$(Pipeline.Workspace)/dacpac/BA-9A-CUSTOMER-ONBOARDING-PORTAL-DB.dacpac" \
+                  /TargetServerName:"$(resolvedSqlFqdn)" \
+                  /TargetDatabaseName:"$(resolvedSqlDb)" \
+                  /AccessToken:"$TOKEN" \
+                  /v:MasterKeyPassword="$(sqlMasterKeyPassword)"
+
+      # Runs after the DACPAC publish so the onboarding schema exists first.
+      # Creates the single contained user the Container App authenticates as and
+      # grants EXECUTE on the onboarding schema (stored-procedure-only access;
+      # docs/adr/0002, docs/adr/0008 — no direct table rights). The user is
+      # created WITH SID (derived from the managed identity's client/application
+      # id) rather than FROM EXTERNAL PROVIDER, so it does NOT require the shared
+      # SQL server's identity to have Microsoft Entra Directory Readers — Azure
+      # SQL matches the identity's access-token client id against this SID at
+      # login.
+      - job: SqlUserSetup
+        displayName: "Create SQL contained user"
+        dependsOn: DeployDacpac
+        pool:
+          name: $(agentPoolLinux)
+        steps:
+          - checkout: none
+
+          - task: AzureCLI@2
+            displayName: "Create SQL contained user"
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                $outputs = az stack sub show `
+                  --name "cop-${{ parameters.environment }}" `
+                  --query outputs -o json | ConvertFrom-Json
+
+                $sqlServer     = $outputs.sqlServerFqdn.value
+                $database      = $outputs.sqlDatabaseName.value
+                $resourceGroup = $outputs.resourceGroupName.value
+                # The API authenticates as the user-assigned managed identity
+                # (docs/adr/0003); the Container App has no system-assigned
+                # identity. Its Entra display name is the identity resource name
+                # (id-<suffix>). Azure SQL matches a managed identity by its
+                # client (application) id, so the contained user's SID is built
+                # from the client id. The client id is read straight from the
+                # identity resource (not a stack output): this stage also runs
+                # when only database/ changed and the infra stage — which is what
+                # refreshes the deployment-stack outputs — was skipped this run,
+                # so a client-id stack output may be absent or stale.
+                $appName = "id-cst-cop-${{ parameters.environment }}"
+
+                if (-not $sqlServer -or -not $database -or -not $resourceGroup) {
+                  Write-Error "Could not read sqlServerFqdn / sqlDatabaseName / resourceGroupName from stack outputs."
+                  exit 1
+                }
+
+                $clientId = az identity show `
+                  --name $appName `
+                  --resource-group $resourceGroup `
+                  --query clientId -o tsv
+                if (-not $clientId) {
+                  Write-Error "Could not resolve client id for managed identity '$appName' in resource group '$resourceGroup'."
+                  exit 1
+                }
+
+                # Build the login SID from the identity's client (application) id.
+                # Creating the user WITH SID (instead of FROM EXTERNAL PROVIDER)
+                # avoids the Directory Readers requirement on the shared SQL
+                # server's identity; Azure SQL matches the managed identity's
+                # access-token client id against this SID at login.
+                function ConvertTo-SqlSid([string]$guid) {
+                  $bytes = ([Guid]$guid).ToByteArray()
+                  return "0x" + (($bytes | ForEach-Object { $_.ToString("x2") }) -join "")
+                }
+                $appSid = ConvertTo-SqlSid $clientId
+                Write-Host "App identity: $appName (client $clientId) SID $appSid"
+
+                $token = az account get-access-token `
+                  --resource https://database.windows.net `
+                  --query accessToken -o tsv
+
+                if (-not (Get-Module -ListAvailable -Name SqlServer)) {
+                  Install-Module -Name SqlServer -Force -AllowClobber -Scope CurrentUser
+                }
+
+                # Drop-then-create so the user is always rebound to the identity's
+                # current client id. TYPE = E (external user) is the category Azure
+                # SQL uses for managed identities. The app reaches the database only
+                # through stored procedures (docs/adr/0002, docs/adr/0008), so it is
+                # granted EXECUTE on the onboarding schema — not db_datareader and no
+                # direct table rights. The append-only audit trail additionally
+                # DENYs direct UPDATE/DELETE as defence-in-depth (security-design
+                # §12). Keep this in sync with database/Scripts/create-sql-user-app.sql.
+                $appQuery = @"
+                IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$appName')
+                  DROP USER [$appName];
+                CREATE USER [$appName] WITH SID = $appSid, TYPE = E;
+                GRANT EXECUTE ON SCHEMA::[onboarding] TO [$appName];
+                DENY UPDATE, DELETE ON OBJECT::[onboarding].[AuditLog] TO [$appName];
+                "@
+
+                Invoke-Sqlcmd -ServerInstance $sqlServer -Database $database -AccessToken $token -Query $appQuery
+                Write-Host "SQL user ready: $appName"
